@@ -5,6 +5,10 @@ from mininet.log import setLogLevel
 from mininet.cli import CLI
 from subprocess import check_output, call, CalledProcessError
 
+# ONOS controller info
+onos_ip = "10.236.108.129"  # Change this if needed
+onos_port = 6653
+
 def cleanup_qos():
     try:
         print("Cleaning up QoS configurations...")
@@ -109,7 +113,7 @@ class SimpleTopo(Topo):
         self.addLink(switches[4], switches[6])
 
 def run():
-    c0 = RemoteController('c0', ip='10.236.108.129', port=6653)
+    c0 = RemoteController('c0', ip=onos_ip, port=onos_port)
 
     net = Mininet(topo=SimpleTopo(),
                   controller=c0,
