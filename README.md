@@ -1,4 +1,4 @@
-# Modeling a Campus Network with Software-Defined Networking to Enhance Quality of Service: A Comparative Study with Traditional Configuration
+# Modeling a Campus Network with Software-Defined Networking to Enhance Quality of Service: A Comparative Study 
 
 ## Setup Instructions
 
