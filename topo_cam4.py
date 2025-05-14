@@ -1,4 +1,7 @@
+# Code edited by Bao Chu 
+# Main difference:
 # run iperf test on all server at the same time 
+
 from mininet.net import Mininet
 from mininet.node import RemoteController, OVSSwitch
 from mininet.topo import Topo
