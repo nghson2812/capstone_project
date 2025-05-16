@@ -6,8 +6,19 @@ from mininet.cli import CLI
 from subprocess import check_output, call, CalledProcessError
 
 # ONOS controller info
-onos_ip = "10.236.108.129"  # Change this if needed
+onos_ip = "192.168.1.76"  # Change this if needed
 onos_port = 6653
+
+TOTAL_MAX_RATE = 1_000_000_000  # 1 Gbps in bits per second
+
+QUEUE_CONFIG = {
+    'q1s': 0.005,  # 0.5% for Student - Mail Service
+    'q2s': 0.025,  # 2.5% for Student - RTMP Service
+    'q3s': 0.01,   # 1%   for Student - Call Service
+    'q1f': 0.015,  # 1.5% for Faculty - Mail Service
+    'q2f': 0.05,   # 5%   for Faculty - RTMP Service
+    'q3f': 0.02    # 2%   for Faculty - Call Service
+}
 
 def cleanup_qos():
     try:
@@ -28,22 +39,42 @@ def cleanup_qos():
     except CalledProcessError as e:
         print(f"Error during QoS cleanup: {e}")
 
+def generate_qos_queue_cmds():
+    cmd = ['sudo', 'ovs-vsctl']
+    queue_ids = []
+
+    for name, pct in QUEUE_CONFIG.items():
+        rate = int(TOTAL_MAX_RATE * pct)
+        queue_ids.extend(['--', f'--id=@{name}', 'create', 'queue', f'other-config:max-rate={rate}'])
+
+    qos_queues = [f'queues:{i + 1}=@{key}' for i, key in enumerate(QUEUE_CONFIG.keys())]
+
+    cmd.extend(queue_ids)
+    cmd.extend([
+        '--', '--id=@newqos', 'create', 'qos', 'type=linux-htb',
+        f'other-config:max-rate={TOTAL_MAX_RATE}',
+        *qos_queues
+    ])
+
+    return cmd
+
 def setup_qos_on_host_ports(net):
-    # Create two queues: 500 Mbps and 100 Mbps
     try:
-        qos_result = check_output([
-            'sudo', 'ovs-vsctl',
-            '--', '--id=@q1s', 'create', 'queue', 'other-config:max-rate=5000000',  # Student - Mail Service
-            '--', '--id=@q2s', 'create', 'queue', 'other-config:max-rate=25000000',  # Student - RTMP Service
-            '--', '--id=@q3s', 'create', 'queue', 'other-config:max-rate=10000000',  # Student - Call Service
-            '--', '--id=@q1f', 'create', 'queue', 'other-config:max-rate=15000000',  # Faculty - Mail Service
-            '--', '--id=@q2f', 'create', 'queue', 'other-config:max-rate=50000000',  # Faculty - RTMP Service
-            '--', '--id=@q3f', 'create', 'queue', 'other-config:max-rate=20000000',  # Faculty - Call Service
-            '--', '--id=@newqos', 'create', 'qos', 'type=linux-htb',
-            'other-config:max-rate=1000000000',
-            'queues:1=@q1s', 'queues:2=@q2s', 'queues:3=@q3s',
-            'queues:4=@q1f', 'queues:5=@q2f', 'queues:6=@q3f'
-        ]).decode()
+        # qos_result = check_output([
+        #     'sudo', 'ovs-vsctl',
+        #     '--', '--id=@q1s', 'create', 'queue', 'other-config:max-rate=5000000',  # Student - Mail Service
+        #     '--', '--id=@q2s', 'create', 'queue', 'other-config:max-rate=25000000',  # Student - RTMP Service
+        #     '--', '--id=@q3s', 'create', 'queue', 'other-config:max-rate=10000000',  # Student - Call Service
+        #     '--', '--id=@q1f', 'create', 'queue', 'other-config:max-rate=15000000',  # Faculty - Mail Service
+        #     '--', '--id=@q2f', 'create', 'queue', 'other-config:max-rate=50000000',  # Faculty - RTMP Service
+        #     '--', '--id=@q3f', 'create', 'queue', 'other-config:max-rate=20000000',  # Faculty - Call Service
+        #     '--', '--id=@newqos', 'create', 'qos', 'type=linux-htb',
+        #     'other-config:max-rate=1000000000',
+        #     'queues:1=@q1s', 'queues:2=@q2s', 'queues:3=@q3s',
+        #     'queues:4=@q1f', 'queues:5=@q2f', 'queues:6=@q3f'
+        # ]).decode()
+
+        qos_result = check_output(generate_qos_queue_cmds()).decode()
 
         # Extract the last UUID (QoS ID)
         qos_ids = qos_result.strip().split('\n')  # Split by newline and remove extra spaces

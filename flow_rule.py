@@ -3,7 +3,7 @@ import json
 from requests.auth import HTTPBasicAuth
 
 # ONOS controller info
-onos_ip = "10.236.108.129"  # Change this if needed
+onos_ip = "192.168.1.76"  # Change this if needed
 onos_port = "8181"
 username = "onos"
 password = "rocks"
