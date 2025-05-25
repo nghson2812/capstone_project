@@ -1,5 +1,6 @@
 # This version has the multithread iperf function (one host send multiple TCP request at a time)
 # Also update run_iperf to provide more data.
+# Also add the 'h1s ping h1f' function for checking the readiness of the topo.
 # Modify by Khai Nguyen
 
 # run iperf test on each server one by one. 
