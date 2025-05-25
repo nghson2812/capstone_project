@@ -225,7 +225,7 @@ def custom_cli(net):
             # Run shell command
             print(net.getNodeByName('h1').cmd(cmd[3:]))
         else:
-            print("Unknown command. Available: run_iperf, ping_all, exit, sh <host_cmd>")
+            print("Unknown command. Available: run_iperf, pingall, exit, sh <host_cmd>")
 
 if __name__ == '__main__':
     setLogLevel('info')
