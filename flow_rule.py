@@ -3,7 +3,7 @@ import json
 from requests.auth import HTTPBasicAuth
 
 # ONOS controller info
-onos_ip = "192.168.1.76"  # Change this if needed
+onos_ip = "192.168.1.7"  # Change this if needed
 onos_port = "8181"
 username = "onos"
 password = "rocks"
@@ -20,6 +20,30 @@ flow_templates = [
     {"queueId": 5, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.2/32"},  # RTMP
     {"queueId": 6, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.3/32"},  # Call
 ]
+
+# flow_templates = [
+#     # Student flows
+#     {"queueId": 7, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.1/32"},  # Mail
+#     {"queueId": 8, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.2/32"},  # RTMP
+#     {"queueId": 9, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.3/32"},  # Call
+
+#     # Faculty flows
+#     {"queueId": 10, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.1/32"},  # Mail
+#     {"queueId": 11, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.2/32"},  # RTMP
+#     {"queueId": 12, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.3/32"},  # Call
+# ]
+
+# flow_templates = [
+#     # Student flows
+#     {"queueId": 13, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.1/32"},  # Mail
+#     {"queueId": 14, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.2/32"},  # RTMP
+#     {"queueId": 15, "src_ip": "10.0.0.0/24", "dst_ip": "10.0.2.3/32"},  # Call
+
+#     # Faculty flows
+#     {"queueId": 16, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.1/32"},  # Mail
+#     {"queueId": 17, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.2/32"},  # RTMP
+#     {"queueId": 18, "src_ip": "10.0.1.0/24", "dst_ip": "10.0.2.3/32"},  # Call
+# ]
 
 # Fetch the list of devices (switches) from ONOS
 # def get_device_ids():
