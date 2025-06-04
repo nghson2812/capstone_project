@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}QoS Configuration - SDN Control{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">Quality of Service (QoS)</h2>
+        <p class="text-muted">Traffic prioritization and bandwidth management</p>
+    </div>
+</div>
+
+<!-- QoS Overview -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-layer-group fa-2x text-primary mb-2"></i>
+                <h5>6</h5>
+                <small class="text-muted">QoS Queues</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                <h5>2</h5>
+                <small class="text-muted">User Groups</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-12 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-server fa-2x text-info mb-2"></i>
+                <h5>3</h5>
+                <small class="text-muted">Service Types</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QoS Configuration Tables -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Student QoS Policies</h6>
+                <span class="badge bg-primary">Subnet: 10.0.0.0/24</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Queue ID</th>
+                                <th>Bandwidth</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-envelope text-info me-2"></i>
+                                    Mail Service
+                                </td>
+                                <td><span class="badge bg-secondary">1</span></td>
+                                <td>5 Mbps</td>
+                                <td><span class="badge bg-warning">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-video text-danger me-2"></i>
+                                    RTMP Streaming
+                                </td>
+                                <td><span class="badge bg-secondary">2</span></td>
+                                <td>25 Mbps</td>
+                                <td><span class="badge bg-info">High</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    Voice Call
+                                </td>
+                                <td><span class="badge bg-secondary">3</span></td>
+                                <td>10 Mbps</td>
+                                <td><span class="badge bg-success">Medium</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Faculty QoS Policies</h6>
+                <span class="badge bg-success">Subnet: 10.0.1.0/24</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Queue ID</th>
+                                <th>Bandwidth</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-envelope text-info me-2"></i>
+                                    Mail Service
+                                </td>
+                                <td><span class="badge bg-secondary">4</span></td>
+                                <td>15 Mbps</td>
+                                <td><span class="badge bg-warning">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-video text-danger me-2"></i>
+                                    RTMP Streaming
+                                </td>
+                                <td><span class="badge bg-secondary">5</span></td>
+                                <td>50 Mbps</td>
+                                <td><span class="badge bg-info">High</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    Voice Call
+                                </td>
+                                <td><span class="badge bg-secondary">6</span></td>
+                                <td>20 Mbps</td>
+                                <td><span class="badge bg-success">Medium</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bandwidth Allocation Chart -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Bandwidth Allocation Overview</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="bandwidthChart" width="100%" height="60"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Total Bandwidth Usage</h6>
+            </div>
+            <div class="card-body text-center">
+                <canvas id="usageChart" width="200" height="200"></canvas>
+                <div class="mt-3">
+                    <h4 id="totalUsage">125</h4>
+                    <small class="text-muted">Mbps Allocated</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QoS Management Actions -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">QoS Management</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="refreshQosInfo()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh QoS Status
+                    </button>
+                    <button class="btn btn-success" onclick="applyQosConfiguration()">
+                        <i class="fas fa-check me-2"></i>Apply QoS Configuration
+                    </button>
+                    <button class="btn btn-warning" onclick="resetQosConfiguration()">
+                        <i class="fas fa-undo me-2"></i>Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">System Information</h6>
+            </div>
+            <div class="card-body">
+                <div id="qosSystemInfo">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <div class="mt-2">Loading QoS information...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeBandwidthChart();
+    initializeUsageChart();
+    refreshQosInfo();
+});
+
+function initializeBandwidthChart() {
+    const ctx = document.getElementById('bandwidthChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Student Mail', 'Student RTMP', 'Student Call', 'Faculty Mail', 'Faculty RTMP', 'Faculty Call'],
+            datasets: [{
+                label: 'Allocated Bandwidth (Mbps)',
+                data: [5, 25, 10, 15, 50, 20],
+                backgroundColor: [
+                    '#17a2b8', '#ffc107', '#28a745',
+                    '#17a2b8', '#ffc107', '#28a745'
+                ],
+                borderColor: [
+                    '#138496', '#e0a800', '#1e7e34',
+                    '#138496', '#e0a800', '#1e7e34'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Bandwidth (Mbps)'
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+function initializeUsageChart() {
+    const ctx = document.getElementById('usageChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Used', 'Available'],
+            datasets: [{
+                data: [125, 875], // 125 Mbps used out of 1000 Mbps total
+                backgroundColor: ['#007bff', '#e9ecef'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+function refreshQosInfo() {
+    const infoContainer = document.getElementById('qosSystemInfo');
+    
+    infoContainer.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <div class="mt-2">Loading QoS information...</div>
+        </div>
+    `;
+    
+    fetch('/api/qos')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayQosInfo(data.qos);
+            } else {
+                infoContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${data.message}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            infoContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading QoS info: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayQosInfo(qosData) {
+    const infoContainer = document.getElementById('qosSystemInfo');
+    
+    let html = `
+        <div class="qos-status mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>QoS Status:</span>
+                <span class="badge bg-success">Active</span>
+            </div>
+        </div>
+    `;
+    
+    if (qosData.bandwidth_limits) {
+        html += `
+            <div class="bandwidth-limits">
+                <h6 class="text-muted mb-2">Current Limits:</h6>
+                <div class="small">
+        `;
+        
+        Object.entries(qosData.bandwidth_limits).forEach(([service, limit]) => {
+            html += `
+                <div class="d-flex justify-content-between">
+                    <span>${service.replace('_', ' ').toUpperCase()}:</span>
+                    <strong>${limit}</strong>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    }
+    
+    if (qosData.ovs_output) {
+        html += `
+            <div class="mt-3">
+                <h6 class="text-muted mb-2">OVS Queue Status:</h6>
+                <pre class="small bg-light p-2" style="max-height: 150px; overflow-y: auto;">${qosData.ovs_output}</pre>
+            </div>
+        `;
+    }
+    
+    infoContainer.innerHTML = html;
+}
+
+function applyQosConfiguration() {
+    showStatusMessage('Applying QoS configuration...', 'info');
+    
+    fetch('/api/inject_flows', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showStatusMessage('QoS configuration applied successfully', 'success');
+                refreshQosInfo();
+            } else {
+                showStatusMessage(`Failed to apply QoS: ${data.message}`, 'danger');
+            }
+        })
+        .catch(error => {
+            showStatusMessage(`Error applying QoS: ${error.message}`, 'danger');
+        });
+}
+
+function resetQosConfiguration() {
+    if (confirm('Are you sure you want to reset QoS configuration to defaults?')) {
+        showStatusMessage('Resetting QoS configuration...', 'warning');
+        // This would require implementing a reset endpoint
+        showStatusMessage('Reset functionality not implemented yet', 'info');
+    }
+}
+
+function showStatusMessage(message, type) {
+    const container = document.getElementById('statusMessage');
+    const alertClass = `alert-${type}`;
+    
+    container.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

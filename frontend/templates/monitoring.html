@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring - SDN Control{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">Network Monitoring</h2>
+        <p class="text-muted">Performance metrics and network analysis</p>
+    </div>
+</div>
+
+<!-- Performance Overview -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Network Throughput</h6>
+                <canvas id="throughputChart" width="150" height="150"></canvas>
+                <div class="mt-3">
+                    <h5 id="throughputValue">--</h5>
+                    <small class="text-muted">Mbps Average</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Active Connections</h6>
+                <div class="metric-large">
+                    <h2 id="connectionCount">0</h2>
+                    <small class="text-muted">Current connections</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-12 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Packet Loss</h6>
+                <div class="metric-large">
+                    <h2 id="packetLoss">0%</h2>
+                    <small class="text-muted">Average loss rate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- iPerf Test Results -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">iPerf Performance Tests</h6>
+                <button class="btn btn-sm btn-primary" onclick="runIperfMonitoring()">
+                    <i class="fas fa-play me-1"></i>Run Test
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="iperfResults">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-chart-line fa-2x mb-3"></i>
+                        <p>Click "Run Test" to perform iPerf bandwidth testing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bandwidth Usage by Service -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Traffic Distribution</h6>
+                <canvas id="trafficChart" width="150" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Bandwidth Usage by Service</h6>
+            </div>
+            <div class="card-body">
+                <div class="service-metric mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>Mail Service</span>
+                        <span class="text-muted">5-15 Mbps</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" style="width: 30%"></div>
+                    </div>
+                </div>
+
+                <div class="service-metric mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>RTMP Streaming</span>
+                        <span class="text-muted">25-50 Mbps</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: 75%"></div>
+                    </div>
+                </div>
+
+                <div class="service-metric mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>Voice Call</span>
+                        <span class="text-muted">10-20 Mbps</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Monitoring -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Real-time Bandwidth Monitoring</h6>
+                <div class="card-tools">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleMonitoring()">
+                        <i class="fas fa-play me-1"></i>
+                        <span id="monitoringToggle">Start Monitoring</span>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="realtimeChart" width="100%" height="60"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let realtimeChart;
+let monitoringActive = false;
+let monitoringInterval;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    updateMonitoringData();
+    setInterval(updateMonitoringData, 30000); // Update every 30 seconds
+});
+
+function initializeCharts() {
+    // Throughput Chart
+    const throughputCtx = document.getElementById('throughputChart').getContext('2d');
+    new Chart(throughputCtx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [70, 30],
+                backgroundColor: ['#007bff', '#e9ecef'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            }
+        }
+    });
+
+    // Traffic Distribution Chart
+    const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+    new Chart(trafficCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Mail', 'RTMP', 'Voice Call', 'Other'],
+            datasets: [{
+                data: [15, 50, 20, 15],
+                backgroundColor: ['#17a2b8', '#ffc107', '#28a745', '#6c757d'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 10,
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+
+    // Real-time Chart
+    const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
+    realtimeChart = new Chart(realtimeCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 20}, (_, i) => `${i}s`),
+            datasets: [{
+                label: 'Throughput (Mbps)',
+                data: Array(20).fill(0),
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            },
+            animation: { duration: 0 }
+        }
+    });
+}
+
+function updateMonitoringData() {
+    // Update network status and basic metrics
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('connectionCount').textContent = data.device_count || 0;
+            }
+        })
+        .catch(error => console.error('Error updating monitoring data:', error));
+}
+
+function runIperfMonitoring() {
+    const resultsDiv = document.getElementById('iperfResults');
+    const button = event.target;
+    const originalText = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Running...';
+
+    resultsDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <div class="mt-2">Running iPerf tests...</div>
+        </div>
+    `;
+
+    fetch('/api/iperf')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.results) {
+                displayIperfResults(data.results);
+                updateThroughputMetric(data.results.summary.avg_bandwidth);
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${data.message || 'iPerf test failed'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error running iPerf test:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error running iPerf test
+                </div>
+            `;
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+}
+
+function displayIperfResults(results) {
+    const resultsDiv = document.getElementById('iperfResults');
+
+    let html = `
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Tests Completed</h6>
+                        <h4 class="text-primary">${results.summary.total_tests}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Average Bandwidth</h6>
+                        <h4 class="text-success">${results.summary.avg_bandwidth.toFixed(2)} Mbps</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">Peak Bandwidth</h6>
+                        <h4 class="text-info">${results.summary.max_bandwidth.toFixed(2)} Mbps</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Student Host Performance</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Server</th>
+                                <th>Bandwidth</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+
+    for (const [server, bandwidth] of Object.entries(results.student_to_servers)) {
+        html += `
+            <tr>
+                <td>${server}</td>
+                <td>${bandwidth.toFixed(2)} Mbps</td>
+            </tr>
+        `;
+    }
+
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6>Faculty Host Performance</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Server</th>
+                                <th>Bandwidth</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+
+    for (const [server, bandwidth] of Object.entries(results.faculty_to_servers)) {
+        html += `
+            <tr>
+                <td>${server}</td>
+                <td>${bandwidth.toFixed(2)} Mbps</td>
+            </tr>
+        `;
+    }
+
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    resultsDiv.innerHTML = html;
+}
+
+function updateThroughputMetric(avgBandwidth) {
+    document.getElementById('throughputValue').textContent = avgBandwidth.toFixed(1);
+}
+
+function toggleMonitoring() {
+    const toggleButton = document.getElementById('monitoringToggle');
+
+    if (!monitoringActive) {
+        monitoringActive = true;
+        toggleButton.innerHTML = '<i class="fas fa-pause me-1"></i>Stop Monitoring';
+
+        monitoringInterval = setInterval(() => {
+            updateRealtimeChart();
+        }, 1000);
+    } else {
+        monitoringActive = false;
+        toggleButton.innerHTML = '<i class="fas fa-play me-1"></i>Start Monitoring';
+        clearInterval(monitoringInterval);
+    }
+}
+
+function updateRealtimeChart() {
+    // Simulate real-time data
+    const newValue = Math.random() * 80 + 10; // Random value between 10-90
+
+    // Shift data and add new value
+    realtimeChart.data.datasets[0].data.shift();
+    realtimeChart.data.datasets[0].data.push(newValue);
+
+    realtimeChart.update('none');
+
+    // Update connection count with random value
+    document.getElementById('connectionCount').textContent = Math.floor(Math.random() * 50) + 10;
+}
+</script>
+{% endblock %}
