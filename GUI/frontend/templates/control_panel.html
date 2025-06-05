@@ -10,6 +10,43 @@
     </div>
 </div>
 
+<!-- Configuration Selection -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Topology Selection</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="topologySelect" class="form-label">Select Topology</label>
+                    <select class="form-select" id="topologySelect" onchange="selectTopology()">
+                        <option value="">Choose topology...</option>
+                    </select>
+                </div>
+                <div class="small text-muted" id="topologyInfo">No topology selected</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Flow Rule Selection</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="flowruleSelect" class="form-label">Select Flow Rules</label>
+                    <select class="form-select" id="flowruleSelect" onchange="selectFlowrule()">
+                        <option value="">Choose flow rules...</option>
+                    </select>
+                </div>
+                <div class="small text-muted" id="flowruleInfo">No flow rules selected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Network Controls -->
 <div class="row mb-4">
     <div class="col-lg-6">
@@ -49,14 +86,9 @@
                 <hr>
 
                 <div class="row g-2">
-                    <div class="col-md-6">
-                        <button class="btn btn-primary w-100" onclick="injectFlows(1)">
-                            <i class="fas fa-stream me-2"></i>Inject Flow Rules 1
-                        </button>
-                    </div>
-                    <div class="col-md-6">
-                        <button class="btn btn-outline-primary w-100" onclick="injectFlows(2)">
-                            <i class="fas fa-stream me-2"></i>Inject Flow Rules 2
+                    <div class="col-12">
+                        <button class="btn btn-primary w-100" onclick="injectFlows()">
+                            <i class="fas fa-stream me-2"></i>Inject Flow Rules
                         </button>
                     </div>
                 </div>
@@ -130,177 +162,371 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        updateControlPanel();
-        setInterval(updateControlPanel, 10000); // Update every 10 seconds
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    updateControlPanel();
+    setInterval(updateControlPanel, 10000); // Update every 10 seconds
+    loadTopologies();
+    loadFlowrules();
 
-    function updateControlPanel() {
-        fetch('/api/status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    updateNetworkStatusDisplay(data.network_running);
-                    document.getElementById('deviceCountControl').textContent = data.device_count || '--';
-                }
-            })
-            .catch(error => {
-                console.error('Error updating control panel:', error);
-                updateNetworkStatusDisplay(false);
-            });
+    // Restore state after a delay to ensure dropdowns are populated
+    setTimeout(restoreControlPanelState, 1000);
+});
 
-        // Update flow count
-        fetch('/api/flows')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('flowCountControl').textContent = data.flows.length;
-                }
-            })
-            .catch(error => console.error('Error getting flows:', error));
+function updateControlPanel() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateNetworkStatusDisplay(data.network_running);
+                document.getElementById('deviceCountControl').textContent = data.device_count || '--';
+            }
+        })
+        .catch(error => {
+            console.error('Error updating control panel:', error);
+            updateNetworkStatusDisplay(false);
+        });
+
+    // Update flow count
+    fetch('/api/flows')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('flowCountControl').textContent = data.flows.length;
+            }
+        })
+        .catch(error => console.error('Error getting flows:', error));
+}
+
+function updateNetworkStatusDisplay(isRunning) {
+    const statusCircle = document.getElementById('statusCircle');
+    const statusText = document.getElementById('networkStatusText');
+
+    if (isRunning) {
+        statusCircle.className = 'status-circle status-running';
+        statusText.textContent = 'Network Running';
+        statusText.className = 'mb-1 text-success';
+    } else {
+        statusCircle.className = 'status-circle status-stopped';
+        statusText.textContent = 'Network Stopped';
+        statusText.className = 'mb-1 text-danger';
     }
+}
 
-    function updateNetworkStatusDisplay(isRunning) {
-        const statusCircle = document.getElementById('statusCircle');
-        const statusText = document.getElementById('networkStatusText');
+function startNetwork() {
+    logOperation('Starting network...', 'info');
+    disableButtons(true);
 
-        if (isRunning) {
-            statusCircle.className = 'status-circle status-running';
-            statusText.textContent = 'Network Running';
-            statusText.className = 'mb-1 text-success';
-        } else {
-            statusCircle.className = 'status-circle status-stopped';
-            statusText.textContent = 'Network Stopped';
-            statusText.className = 'mb-1 text-danger';
-        }
-    }
+    fetch('/api/start', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                logOperation(data.message, 'success');
+                updateControlPanel();
+            } else {
+                logOperation(`Error: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            logOperation(`Network start failed: ${error.message}`, 'error');
+        })
+        .finally(() => {
+            disableButtons(false);
+        });
+}
 
-    function startNetwork() {
-        logOperation('Starting network...', 'info');
-        disableButtons(true);
+function stopNetwork() {
+    logOperation('Stopping network...', 'info');
+    disableButtons(true);
 
-        fetch('/api/start', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    logOperation(data.message, 'success');
-                    updateControlPanel();
-                } else {
-                    logOperation(`Error: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                logOperation(`Network start failed: ${error.message}`, 'error');
-            })
-            .finally(() => {
-                disableButtons(false);
-            });
-    }
+    fetch('/api/stop', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                logOperation(data.message, 'success');
+                updateControlPanel();
+            } else {
+                logOperation(`Error: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            logOperation(`Network stop failed: ${error.message}`, 'error');
+        })
+        .finally(() => {
+            disableButtons(false);
+        });
+}
 
-    function stopNetwork() {
-        logOperation('Stopping network...', 'info');
-        disableButtons(true);
+function runPingTest() {
+    logOperation('Running ping test...', 'info');
 
-        fetch('/api/stop', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    logOperation(data.message, 'success');
-                    updateControlPanel();
-                } else {
-                    logOperation(`Error: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                logOperation(`Network stop failed: ${error.message}`, 'error');
-            })
-            .finally(() => {
-                disableButtons(false);
-            });
-    }
+    fetch('/api/pingall')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                logOperation('Ping test completed successfully', 'success');
+            } else {
+                logOperation(`Ping test failed: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            logOperation(`Ping test error: ${error.message}`, 'error');
+        });
+}
 
-    function runPingTest() {
-        logOperation('Running ping test...', 'info');
+function runIperfTest() {
+    logOperation('Running iPerf performance test...', 'info');
 
-        fetch('/api/pingall')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    logOperation('Ping test completed successfully', 'success');
-                } else {
-                    logOperation(`Ping test failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                logOperation(`Ping test error: ${error.message}`, 'error');
-            });
-    }
+    fetch('/api/iperf')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                logOperation('iPerf test completed successfully', 'success');
+            } else {
+                logOperation(`iPerf test failed: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            logOperation(`iPerf test error: ${error.message}`, 'error');
+        });
+}
 
-    function runIperfTest() {
-        logOperation('Running iPerf performance test...', 'info');
+function injectFlows() {
+    logOperation('Injecting QoS flow rules...', 'info');
 
-        fetch('/api/iperf')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    logOperation('iPerf test completed successfully', 'success');
-                } else {
-                    logOperation(`iPerf test failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                logOperation(`iPerf test error: ${error.message}`, 'error');
-            });
-    }
+    fetch('/api/inject_flows', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                logOperation('Flow rules injected successfully', 'success');
+                updateControlPanel();
+            } else {
+                logOperation(`Flow injection failed: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            logOperation(`Flow injection error: ${error.message}`, 'error');
+        });
+}
 
-    function injectFlows() {
-        logOperation('Injecting QoS flow rules...', 'info');
+function logOperation(message, type) {
+    const logContainer = document.getElementById('operationLog');
+    const timestamp = new Date().toLocaleTimeString();
+    const typeClass = type === 'success' ? 'text-success' : type === 'error' ? 'text-danger' : 'text-info';
 
-        fetch('/api/inject_flows', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    logOperation('Flow rules injected successfully', 'success');
-                    updateControlPanel();
-                } else {
-                    logOperation(`Flow injection failed: ${data.message}`, 'error');
-                }
-            })
-            .catch(error => {
-                logOperation(`Flow injection error: ${error.message}`, 'error');
-            });
-    }
-
-    function logOperation(message, type) {
-        const logContainer = document.getElementById('operationLog');
-        const timestamp = new Date().toLocaleTimeString();
-        const typeClass = type === 'success' ? 'text-success' : type === 'error' ? 'text-danger' : 'text-info';
-
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = `
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    logEntry.innerHTML = `
         <span class="log-timestamp">[${timestamp}]</span>
         <span class="log-message ${typeClass}">${message}</span>
     `;
 
-        logContainer.appendChild(logEntry);
-        logContainer.scrollTop = logContainer.scrollHeight;
-    }
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
 
-    function clearLog() {
-        document.getElementById('operationLog').innerHTML = `
+    // Save log to localStorage
+    saveControlPanelState();
+}
+
+function clearLog() {
+    document.getElementById('operationLog').innerHTML = `
         <div class="log-entry">
             <span class="log-timestamp">[System]</span>
             <span class="log-message">Log cleared.</span>
         </div>
     `;
-    }
+}
 
-    function disableButtons(disabled) {
-        const buttons = document.querySelectorAll('.btn');
-        buttons.forEach(button => {
-            button.disabled = disabled;
-        });
+function disableButtons(disabled) {
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        button.disabled = disabled;
+    });
+}
+
+function loadTopologies() {
+    fetch('/api/topologies')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('topologySelect');
+            if (data.status === 'success') {
+                data.topologies.forEach(topology => {
+                    const option = document.createElement('option');
+                    option.value = topology.name;
+                    option.textContent = topology.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading topologies:', error));
+}
+
+function loadFlowrules() {
+    fetch('/api/flowrules')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('flowruleSelect');
+            if (data.status === 'success') {
+                data.flowrules.forEach(flowrule => {
+                    const option = document.createElement('option');
+                    option.value = flowrule.name;
+                    option.textContent = flowrule.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading flowrules:', error));
+}
+
+function selectTopology() {
+    const topology = document.getElementById('topologySelect').value;
+    document.getElementById('topologyInfo').textContent = topology ? `Selected topology: ${topology}` : 'No topology selected';
+
+    // Send selected topology to backend
+    fetch('/api/select_topology', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ topology_name: topology })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            logOperation(`Topology selected: ${topology}`, 'success');
+        } else {
+            logOperation(`Error selecting topology: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => logOperation(`Error selecting topology: ${error.message}`, 'error'));
+}
+
+function selectFlowrule() {
+    const flowrule = document.getElementById('flowruleSelect').value;
+    document.getElementById('flowruleInfo').textContent = flowrule ? `Selected flow rules: ${flowrule}` : 'No flow rules selected';
+
+    // Send selected flow rule to backend
+    fetch('/api/select_flowrule', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ flowrule_name: flowrule })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            logOperation(`Flow rules selected: ${flowrule}`, 'success');
+        } else {
+            logOperation(`Error selecting flow rules: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => logOperation(`Error selecting flow rules: ${error.message}`, 'error'));
+}
+
+function saveControlPanelState() {
+    const topologySelect = document.getElementById('topologySelect');
+    const flowruleSelect = document.getElementById('flowruleSelect');
+    const operationLog = document.getElementById('operationLog').innerHTML;
+
+    const state = {
+        selectedTopology: topologySelect ? topologySelect.value : '',
+        topologyInfo: document.getElementById('topologyInfo').textContent,
+        selectedFlowrule: flowruleSelect ? flowruleSelect.value : '',
+        flowruleInfo: document.getElementById('flowruleInfo').textContent,
+        operationLog: operationLog,
+        timestamp: Date.now()
+    };
+
+    localStorage.setItem('controlPanelState', JSON.stringify(state));
+}
+
+function restoreControlPanelState() {
+    try {
+        const savedState = localStorage.getItem('controlPanelState');
+        if (!savedState) return;
+
+        const state = JSON.parse(savedState);
+
+        // Check if state is recent (within last 24 hours)
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (Date.now() - state.timestamp > maxAge) {
+            localStorage.removeItem('controlPanelState');
+            return;
+        }
+
+        // Restore selections
+        if (state.selectedTopology) {
+            const topologySelect = document.getElementById('topologySelect');
+            if (topologySelect) {
+                topologySelect.value = state.selectedTopology;
+                document.getElementById('topologyInfo').textContent = state.topologyInfo || `Selected topology: ${state.selectedTopology}`;
+            }
+        }
+
+        if (state.selectedFlowrule) {
+            const flowruleSelect = document.getElementById('flowruleSelect');
+            if (flowruleSelect) {
+                flowruleSelect.value = state.selectedFlowrule;
+                document.getElementById('flowruleInfo').textContent = state.flowruleInfo || `Selected flow rules: ${state.selectedFlowrule}`;
+            }
+        }
+
+        // Restore operation log
+        if (state.operationLog) {
+            document.getElementById('operationLog').innerHTML = state.operationLog;
+            // Scroll to bottom
+            const logContainer = document.getElementById('operationLog');
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+    } catch (error) {
+        console.error('Failed to restore control panel state:', error);
+        localStorage.removeItem('controlPanelState');
     }
+}
+
+function restoreTopologySelection() {
+    try {
+        const savedState = localStorage.getItem('controlPanelState');
+        if (!savedState) return;
+
+        const state = JSON.parse(savedState);
+        if (state.selectedTopology) {
+            const topologySelect = document.getElementById('topologySelect');
+            if (topologySelect) {
+                topologySelect.value = state.selectedTopology;
+                document.getElementById('topologyInfo').textContent = state.topologyInfo || `Selected topology: ${state.selectedTopology}`;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to restore topology selection:', error);
+    }
+}
+
+function restoreFlowruleSelection() {
+    try {
+        const savedState = localStorage.getItem('controlPanelState');
+        if (!savedState) return;
+
+        const state = JSON.parse(savedState);
+        if (state.selectedFlowrule) {
+            const flowruleSelect = document.getElementById('flowruleSelect');
+            if (flowruleSelect) {
+                flowruleSelect.value = state.selectedFlowrule;
+                document.getElementById('flowruleInfo').textContent = state.flowruleInfo || `Selected flow rules: ${state.selectedFlowrule}`;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to restore flowrule selection:', error);
+    }
+}
+
+// Clear state on page refresh (not on tab change)
+window.addEventListener('beforeunload', function() {
+    // Only clear if it's a full page reload
+    if (performance.navigation.type === 1) {
+        localStorage.removeItem('controlPanelState');
+    }
+});
 </script>
 {% endblock %}
