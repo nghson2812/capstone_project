@@ -54,7 +54,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <i class="fas fa-users fa-2x text-primary mb-2"></i>
-                <h5>8</h5>
+                <h5 id="studentCount">--</h5>
                 <small class="text-muted">Student Hosts</small>
             </div>
         </div>
@@ -64,7 +64,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <i class="fas fa-user-tie fa-2x text-success mb-2"></i>
-                <h5>8</h5>
+                <h5 id="facultyCount">--</h5>
                 <small class="text-muted">Faculty Hosts</small>
             </div>
         </div>
@@ -105,6 +105,9 @@ function loadTopology() {
         .then(data => {
             if (data.status === 'success') {
                 displayTopology(data.topology);
+                // Update statistics
+                document.getElementById('studentCount').textContent = data.topology.student_count;
+                document.getElementById('facultyCount').textContent = data.topology.faculty_count;
             } else {
                 document.getElementById('topologyDiagram').innerHTML = 
                     '<div class="text-danger">Failed to load topology</div>';
@@ -149,6 +152,14 @@ function displayTopology(topology) {
     }
     
     html += `
+            </div>
+        </div>
+        
+        <!-- Selected topology info -->
+        <div class="topology-layer">
+            <div class="alert alert-info">
+                <h6 class="mb-1">Selected Topology: ${topology.selected_topology || 'None'}</h6>
+                <small>Students: ${topology.student_count}, Faculty: ${topology.faculty_count}</small>
             </div>
         </div>
         
