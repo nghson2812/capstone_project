@@ -321,7 +321,7 @@ window.addEventListener('error', function(event) {
 
 // Network connectivity checker
 function checkNetworkConnectivity() {
-    return fetch('/api/status', {
+    return fetch('/api/status', { 
         method: 'HEAD',
         cache: 'no-cache'
     }).then(() => true).catch(() => false);
@@ -337,3 +337,32 @@ setInterval(async () => {
         statusElement.title = isConnected ? 'Connected' : 'Disconnected';
     }
 }, 30000); // Check every 30 seconds
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateNetworkStatus();
+    updateDeviceCount();
+    loadTopologies();
+    loadFlowrules();
+    loadCurrentSelection();
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        updateNetworkStatus();
+        updateDeviceCount();
+    }, 30000);
+});
+
+function injectFlowRules() {
+    fetch('/api/inject_flows', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('success', data.message);
+            } else {
+                showToast('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error injecting flow rules:', error);
+            showToast('error', 'Failed to inject flow rules');
+        });
+}
