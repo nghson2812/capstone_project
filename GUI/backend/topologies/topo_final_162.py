@@ -191,8 +191,6 @@ def run():
     print("\nNetwork is up and ready.\n")
     return net
 
-    net.stop()
-
 # change to h8f
 
 # def ping_h1s_to_h8f(net):
