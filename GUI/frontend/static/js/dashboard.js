@@ -316,7 +316,29 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global error handler
 window.addEventListener('error', function(event) {
     console.error('Global error:', event.error);
+    // Don't show popup for network errors or common issues
+    if (event.error && (
+        event.error.message.includes('fetch') ||
+        event.error.message.includes('Network') ||
+        event.error.message.includes('Failed to fetch')
+    )) {
+        return; // Silently handle network errors
+    }
     showStatusMessage('An unexpected error occurred', 'danger');
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    // Prevent the default browser popup
+    event.preventDefault();
+    
+    // Only show user-friendly messages for specific errors
+    if (event.reason && event.reason.message) {
+        if (event.reason.message.includes('fetch') || event.reason.message.includes('Network')) {
+            showStatusMessage('Connection issue - please check if the network is running', 'warning', 3000);
+        }
+    }
 });
 
 // Network connectivity checker
