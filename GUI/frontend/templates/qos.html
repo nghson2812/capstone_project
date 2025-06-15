@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}QoS Configuration - SDN Control{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">Quality of Service (QoS)</h2>
+        <p class="text-muted">Traffic prioritization and bandwidth management</p>
+    </div>
+</div>
+
+<!-- QoS Overview -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-layer-group fa-2x text-primary mb-2"></i>
+                <h5 id="queueCount">--</h5>
+                <small class="text-muted">QoS Queues</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                <h5 id="userGroups">--</h5>
+                <small class="text-muted">User Groups</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-12 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-server fa-2x text-info mb-2"></i>
+                <h5>3</h5>
+                <small class="text-muted">Service Types</small>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+<!-- Selected Topology Info -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Current Topology Configuration</h6>
+            </div>
+            <div class="card-body">
+                <div id="topologyConfigInfo">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <p>Select a topology in the Control Panel to view QoS configuration</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QoS Configuration Tables -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Student QoS Policies</h6>
+                <span class="badge bg-primary">Subnet: 10.0.0.0/24</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Queue ID</th>
+                                <th>Bandwidth</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-envelope text-info me-2"></i>
+                                    Mail Service
+                                </td>
+                                <td><span class="badge bg-secondary">1</span></td>
+                                <td>5 Mbps</td>
+                                <td><span class="badge bg-warning">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-video text-danger me-2"></i>
+                                    RTMP Streaming
+                                </td>
+                                <td><span class="badge bg-secondary">2</span></td>
+                                <td>25 Mbps</td>
+                                <td><span class="badge bg-info">High</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    Voice Call
+                                </td>
+                                <td><span class="badge bg-secondary">3</span></td>
+                                <td>10 Mbps</td>
+                                <td><span class="badge bg-success">Medium</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Faculty QoS Policies</h6>
+                <span class="badge bg-success">Subnet: 10.0.1.0/24</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Queue ID</th>
+                                <th>Bandwidth</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-envelope text-info me-2"></i>
+                                    Mail Service
+                                </td>
+                                <td><span class="badge bg-secondary">4</span></td>
+                                <td>15 Mbps</td>
+                                <td><span class="badge bg-warning">Normal</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-video text-danger me-2"></i>
+                                    RTMP Streaming
+                                </td>
+                                <td><span class="badge bg-secondary">5</span></td>
+                                <td>50 Mbps</td>
+                                <td><span class="badge bg-info">High</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    Voice Call
+                                </td>
+                                <td><span class="badge bg-secondary">6</span></td>
+                                <td>20 Mbps</td>
+                                <td><span class="badge bg-success">Medium</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadTopologyInfo();
+});
+
+function loadTopologyInfo() {
+    fetch('/api/topology')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateQoSDisplay(data.topology);
+            } else {
+                showNoTopologySelected();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading topology:', error);
+            showNoTopologySelected();
+        });
+}
+
+function updateQoSDisplay(topology) {
+    // Update queue count (18 total queues: 6 per server * 3 servers)
+    document.getElementById('queueCount').textContent = '18';
+    
+    // Update user groups count (student + faculty groups)
+    document.getElementById('userGroups').textContent = '2';
+    
+    // Update topology configuration info
+    const configInfo = document.getElementById('topologyConfigInfo');
+    configInfo.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Selected Topology: ${topology.selected_topology}</h6>
+                <p class="mb-2"><strong>Student Hosts:</strong> ${topology.student_count}</p>
+                <p class="mb-2"><strong>Faculty Hosts:</strong> ${topology.faculty_count}</p>
+                <p class="mb-2"><strong>Total Bandwidth:</strong> 1 Gbps</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success">QoS Allocation</h6>
+                <p class="mb-1"><small class="text-muted">Per Student Host:</small></p>
+                <p class="mb-0">Mail: ${(10/topology.student_count).toFixed(1)}%, RTMP: ${(25/topology.student_count).toFixed(1)}%, Call: ${(15/topology.student_count).toFixed(1)}%</p>
+                <p class="mb-1 mt-2"><small class="text-muted">Per Faculty Host:</small></p>
+                <p class="mb-0">Mail: ${(10/topology.faculty_count).toFixed(1)}%, RTMP: ${(25/topology.faculty_count).toFixed(1)}%, Call: ${(15/topology.faculty_count).toFixed(1)}%</p>
+            </div>
+        </div>
+    `;
+}
+
+function showNoTopologySelected() {
+    document.getElementById('queueCount').textContent = '--';
+    document.getElementById('userGroups').textContent = '--';
+    
+    document.getElementById('topologyConfigInfo').innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <p>Select a topology in the Control Panel to view QoS configuration</p>
+        </div>
+    `;
+}
+
+
+
+
+
+function showStatusMessage(message, type) {
+    const container = document.getElementById('statusMessage');
+    const alertClass = `alert-${type}`;
+    
+    container.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

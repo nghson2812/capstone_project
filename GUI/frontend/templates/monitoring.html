@@ -1,0 +1,486 @@
+
+{% extends "base.html" %}
+
+{% block title %}Monitoring - SDN Control{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">Network Monitoring</h2>
+        <p class="text-muted">Performance metrics and network analysis</p>
+    </div>
+</div>
+
+<!-- Topology Info -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Current Network Configuration</h6>
+            </div>
+            <div class="card-body">
+                <div id="networkConfigInfo">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <p>Select a topology in the Control Panel to view network details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Overview -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Student Hosts</h6>
+                <div class="metric-large">
+                    <h2 id="studentHostCount">--</h2>
+                    <small class="text-muted">Active hosts</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Faculty Hosts</h6>
+                <div class="metric-large">
+                    <h2 id="facultyHostCount">--</h2>
+                    <small class="text-muted">Active hosts</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-12 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-3 text-muted">Network Status</h6>
+                <div class="metric-large">
+                    <h2 id="networkStatus">--</h2>
+                    <small class="text-muted" id="networkStatusText">Checking...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- iPerf Test Results -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">iPerf Performance Tests</h6>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="clearIperfResults()">
+                        <i class="fas fa-trash me-1"></i>Clear
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="runIperfMonitoring()">
+                        <i class="fas fa-play me-1"></i>Run Test
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="iperfResults">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-chart-line fa-2x mb-3"></i>
+                        <p>Click "Run Test" to perform iPerf bandwidth testing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadNetworkConfig();
+    updateMonitoringData();
+    setInterval(updateMonitoringData, 30000); // Update every 30 seconds
+    restoreIperfResults(); // Restore saved iPerf results
+});
+
+// Missing utility functions
+function showToast(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const container = document.body;
+    const toast = document.createElement('div');
+    toast.className = `alert ${alertClass} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    toast.innerHTML = `${message} <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function updateNetworkStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (data.network_running) {
+                    document.getElementById('networkStatus').textContent = 'Online';
+                    document.getElementById('networkStatusText').textContent = 'Network active';
+                    document.getElementById('networkStatus').className = 'metric-large text-success';
+                } else {
+                    document.getElementById('networkStatus').textContent = 'Offline';
+                    document.getElementById('networkStatusText').textContent = 'Network stopped';
+                    document.getElementById('networkStatus').className = 'metric-large text-danger';
+                }
+            }
+        })
+        .catch(error => {
+            document.getElementById('networkStatus').textContent = 'Error';
+            document.getElementById('networkStatusText').textContent = 'Connection failed';
+            document.getElementById('networkStatus').className = 'metric-large text-warning';
+        });
+}
+
+function updateDeviceCount() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update device count if needed
+                console.log('Device count:', data.device_count);
+            }
+        })
+        .catch(error => console.error('Error updating device count:', error));
+}
+
+function loadTopologies() {
+    fetch('/api/topologies')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Available topologies:', data.topologies);
+            }
+        })
+        .catch(error => console.error('Error loading topologies:', error));
+}
+
+function loadFlowrules() {
+    fetch('/api/flowrules')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Available flow rules:', data.flowrules);
+            }
+        })
+        .catch(error => console.error('Error loading flow rules:', error));
+}
+
+function loadCurrentSelection() {
+    fetch('/api/current_selection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Current selection:', data);
+            }
+        })
+        .catch(error => console.error('Error loading current selection:', error));
+}
+
+function loadNetworkConfig() {
+    fetch('/api/topology')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateNetworkDisplay(data.topology);
+            } else {
+                showNoNetworkSelected();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading network config:', error);
+            showNoNetworkSelected();
+        });
+}
+
+function updateNetworkDisplay(topology) {
+    // Update host counts
+    document.getElementById('studentHostCount').textContent = topology.student_count;
+    document.getElementById('facultyHostCount').textContent = topology.faculty_count;
+    
+    // Update network config info
+    const configInfo = document.getElementById('networkConfigInfo');
+    configInfo.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Topology: ${topology.selected_topology}</h6>
+                <p class="mb-1"><strong>Student Subnet:</strong> ${topology.subnets.student.network} (${topology.student_count} hosts)</p>
+                <p class="mb-1"><strong>Faculty Subnet:</strong> ${topology.subnets.faculty.network} (${topology.faculty_count} hosts)</p>
+                <p class="mb-1"><strong>Server Subnet:</strong> ${topology.subnets.server.network} (3 servers)</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success">Network Statistics</h6>
+                <p class="mb-1"><strong>Total Switches:</strong> ${topology.switches.length}</p>
+                <p class="mb-1"><strong>Total Hosts:</strong> ${topology.student_count + topology.faculty_count + 3}</p>
+                <p class="mb-1"><strong>Services:</strong> Mail, RTMP, Voice Call</p>
+            </div>
+        </div>
+    `;
+    
+    // Check network status
+    updateNetworkStatus();
+}
+
+function showNoNetworkSelected() {
+    document.getElementById('studentHostCount').textContent = '--';
+    document.getElementById('facultyHostCount').textContent = '--';
+    document.getElementById('networkStatus').textContent = '--';
+    document.getElementById('networkStatusText').textContent = 'No topology selected';
+    
+    document.getElementById('networkConfigInfo').innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <p>Select a topology in the Control Panel to view network details</p>
+        </div>
+    `;
+}
+
+
+
+function updateMonitoringData() {
+    // Update network status and basic metrics
+    updateNetworkStatus();
+}
+
+function runIperfMonitoring() {
+    const resultsDiv = document.getElementById('iperfResults');
+    const button = event.target;
+    const originalText = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Running...';
+
+    resultsDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status"></div>
+            <div class="mt-2">Running iPerf tests...</div>
+        </div>
+    `;
+
+    fetch('/api/iperf')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' && data.results) {
+                displayIperfResults(data.results);
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${data.message || 'iPerf test failed'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error running iPerf test:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error running iPerf test
+                </div>
+            `;
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+}
+
+function displayIperfResults(results) {
+    const resultsDiv = document.getElementById('iperfResults');
+
+    // Save results to localStorage for persistence
+    saveIperfResults(results);
+
+    // Summary statistics
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white text-center">
+                    <div class="card-body">
+                        <h5>Total Tests</h5>
+                        <h3>${results.summary.total_tests}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white text-center">
+                    <div class="card-body">
+                        <h5>Avg Bandwidth</h5>
+                        <h3>${results.summary.avg_bandwidth.toFixed(2)} Mbps</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white text-center">
+                    <div class="card-body">
+                        <h5>Max Bandwidth</h5>
+                        <h3>${results.summary.max_bandwidth.toFixed(2)} Mbps</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white text-center">
+                    <div class="card-body">
+                        <h5>Min Bandwidth</h5>
+                        <h3>${results.summary.min_bandwidth.toFixed(2)} Mbps</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Student Results
+    if (Object.keys(results.student_results).length > 0) {
+        html += `
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-graduation-cap me-2"></i>Student Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Host</th>
+                                    <th>Bandwidth (Mbps)</th>
+                                    <th>Latency (ms)</th>
+                                    <th>Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+        
+        for (const [host, tests] of Object.entries(results.student_results)) {
+            const avgBw = tests.reduce((sum, test) => sum + test.bandwidth, 0) / tests.length;
+            const avgLat = tests.reduce((sum, test) => sum + test.latency, 0) / tests.length;
+            html += `
+                <tr>
+                    <td><strong>${host}</strong></td>
+                    <td>${avgBw.toFixed(2)}</td>
+                    <td>${avgLat.toFixed(2)}</td>
+                    <td>${tests.length}</td>
+                </tr>
+            `;
+        }
+        
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Faculty Results
+    if (Object.keys(results.faculty_results).length > 0) {
+        html += `
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-chalkboard-teacher me-2"></i>Faculty Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Host</th>
+                                    <th>Bandwidth (Mbps)</th>
+                                    <th>Latency (ms)</th>
+                                    <th>Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+        
+        for (const [host, tests] of Object.entries(results.faculty_results)) {
+            const avgBw = tests.reduce((sum, test) => sum + test.bandwidth, 0) / tests.length;
+            const avgLat = tests.reduce((sum, test) => sum + test.latency, 0) / tests.length;
+            html += `
+                <tr>
+                    <td><strong>${host}</strong></td>
+                    <td>${avgBw.toFixed(2)}</td>
+                    <td>${avgLat.toFixed(2)}</td>
+                    <td>${tests.length}</td>
+                </tr>
+            `;
+        }
+        
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    resultsDiv.innerHTML = html;
+}
+
+function saveIperfResults(results) {
+    try {
+        const dataToSave = {
+            results: results,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('iperfResults', JSON.stringify(dataToSave));
+    } catch (error) {
+        console.error('Failed to save iPerf results:', error);
+    }
+}
+
+function restoreIperfResults() {
+    try {
+        const savedData = localStorage.getItem('iperfResults');
+        if (!savedData) return;
+
+        const data = JSON.parse(savedData);
+        
+        // Check if results are recent (within last 2 hours)
+        const maxAge = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+        if (Date.now() - data.timestamp > maxAge) {
+            localStorage.removeItem('iperfResults');
+            return;
+        }
+
+        if (data.results) {
+            displayIperfResults(data.results);
+        }
+    } catch (error) {
+        console.error('Failed to restore iPerf results:', error);
+        localStorage.removeItem('iperfResults');
+    }
+}
+
+function clearIperfResults() {
+    localStorage.removeItem('iperfResults');
+    const resultsDiv = document.getElementById('iperfResults');
+    resultsDiv.innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-chart-line fa-2x mb-3"></i>
+            <p>Click "Run Test" to perform iPerf bandwidth testing</p>
+        </div>
+    `;
+}
+
+
+</script>
+{% endblock %}
