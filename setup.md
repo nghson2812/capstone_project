@@ -56,7 +56,7 @@ sudo docker run -t -d -p 6653:6653 -p 8181:8181 -p 8101:8101 -p 5005:5005 -p 830
 ### Verify container
 
 ```bash
-wget -q -O - http://192.168.180.130:8181/onos/ui > /dev/null
+wget -q -O - http://localhost:8181/onos/ui > /dev/null
 ```
 
 ### Container management commands
@@ -162,4 +162,37 @@ Example:
 
 ```bash
 http://192.168.180.130:5000/
+```
+
+## Environment Variables (Optional)
+
+You can customize ONOS connection settings using environment variables:
+
+```bash
+export ONOS_IP="127.0.0.1"
+export ONOS_PORT="8181"
+export ONOS_USERNAME="onos"
+export ONOS_PASSWORD="rocks"
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **ONOS container not starting:** Check if ports are already in use
+2. **Network connectivity issues:** Verify IP addresses and firewall settings
+3. **Permission errors:** Ensure user is in docker group
+4. **Mininet issues:** Run with sudo if needed: `sudo python3 main.py`
+
+### Useful Commands
+
+```bash
+# Check ONOS status
+curl -u onos:rocks http://localhost:8181/onos/v1/devices
+
+# Check Mininet installation
+sudo mn --test pingall
+
+# View docker logs
+sudo docker logs onos
 ```
